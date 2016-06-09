@@ -1,0 +1,163 @@
+# mdp implementation needs to go here
+
+import rospy
+from std_msgs.msg import Bool
+import json
+from math import *
+from cse_190_assi_3.msg import PolicyList
+from read_config import read_config
+import numpy as np
+import copy
+
+
+policy_publisher = rospy.Publisher(
+                "/results/policy_list",
+                PolicyList,
+                queue_size = 10
+        		)
+
+class boardPos():
+
+	def __init__(self, value, policy):
+		self.value = value
+		self.policy = policy
+
+	def __str__(self):
+		return str(self.value) + " " + self.policy
+
+def mdp():
+	config = read_config()
+	move_list = config["move_list"]
+	mapWidth = config["map_size"][1]
+	mapHeight = config["map_size"][0]	
+	obstacles = config["walls"]
+	pits = config["pits"]
+	start = config["start"]
+	goal = config["goal"]
+	iter_limit = config["max_iterations"]
+	threshold = config["threshold_difference"]
+
+	board = []
+
+	for i in range(mapHeight):
+		board.append([])
+		for j in range(mapWidth):
+			cur = boardPos(0, "E")
+			if [i, j] in obstacles:			
+				cur.value = config["reward_for_hitting_wall"]
+				cur.policy = "WALL"
+			elif [i, j] in pits:
+				cur.value = config["reward_for_falling_in_pit"]
+				cur.policy = "PIT"
+			elif [i, j] == goal:
+				cur.value = config["reward_for_reaching_goal"]
+				cur.policy = "GOAL"
+			board[i].append(cur)
+		
+
+	#print len(result), len(result[0])
+	for i in range(mapHeight):
+		for j in range(mapWidth):
+			policy.append(board[i][j].policy)
+	policy_publisher.publish(PolicyList(policy))
+	
+	rospy.sleep(1)
+
+	iter_count = 0
+
+	while iter_count < iter_limit:
+		board, stop = update_board(board, config)
+		policy = []
+		for i in range(mapHeight):
+			for j in range(mapWidth):
+				policy.append(board[i][j].policy)
+		policy_publisher.publish(PolicyList(policy))
+		if stop:
+			break
+		iter_count += 1
+		
+	for i in range(mapHeight):
+		for j in range(mapWidth):
+			print i, j, board[i][j]
+
+def update_board(board, config):
+
+	new_board = copy.deepcopy(board)
+	for i in range(len(board)):
+		for j in range(len(board[i])):
+			print new_board[i][j].policy,
+
+		print " "
+	print " "
+	move_list = config["move_list"]
+	discount_factor = config["discount_factor"]
+	pf = config["prob_move_forward"]
+	pb = config["prob_move_backward"]
+	pl = config["prob_move_left"]
+	pr = config["prob_move_right"]
+	
+	prob_list = [pf, pb, pl, pr]
+
+	possible_moves = [[-1, 0], [0, -1], [1, 0], [0, 1]]
+	direction_list = [[[-1, 0], [1, 0], [0, -1], [0, 1]],
+					   [[0, -1], [0, 1], [1, 0], [-1, 0]],
+					   [[1, 0], [-1, 0], [0, 1], [0, -1]],
+					   [[0, 1], [0, -1], [-1, 0], [1, 0]]]
+
+	for i in range(len(board)):
+		for j in range(len(board[i])):
+			if [i, j] == config["goal"] or [i, j] in config["walls"] or [i, j] in config["pits"]:
+				continue
+
+			best_move = ([], -999999)
+			for move in move_list:
+				#print i, j, move, move_value(board, config, [i, j], move)
+				new_value = 0
+				for direction, prob in zip(direction_list[possible_moves.index(move)], prob_list):
+					new_value += prob * move_value(board, config, [i, j], direction)
+				if new_value > best_move[1]:
+					best_move = (move, new_value)
+
+			if best_move[1] == 0:
+				continue			
+			new_board[i][j].value = best_move[1]
+			if best_move[0] == [-1, 0]:
+				new_board[i][j].policy = "N"
+			elif best_move[0] == [1, 0]:
+				new_board[i][j].policy = "S"
+			elif best_move[0] == [0, -1]:
+				new_board[i][j].policy = "W"
+			else:
+				new_board[i][j].policy = "E"
+
+	
+	rospy.sleep(1)
+
+	diff = 0
+	for i in range(len(board)):
+		for j in range(len(board[i])):
+			diff += abs(new_board[i][j].value - board[i][j].value)
+	
+	if diff <= config["threshold_difference"]:
+		return (new_board, True)
+
+	return (new_board, False)
+
+
+def move_value(board, config, pos, move):
+	df = config["discount_factor"]
+	reward = config["reward_for_each_step"]
+	new_pos = [pos[0] + move[0], pos[1] + move[1]]
+
+	"""if new_pos == config["goal"]:
+		reward = config["reward_for_reaching_goal"]
+	elif new_pos in config["pits"]:
+		reward = config["reward_for_falling_in_pit"]"""
+	if new_pos in config["walls"] or new_pos[0] < 0 or new_pos[0] >= config["map_size"][0] or new_pos[1] < 0 or new_pos[1] >= config["map_size"][1]:
+		reward = config["reward_for_hitting_wall"]
+		new_pos = pos
+	
+	return reward + df * board[new_pos[0]][new_pos[1]].value
+
+
+

@@ -1,0 +1,18 @@
+{
+  "move_list": [
+    [0, 1],
+    [0, -1],
+    [1, 0],
+    [-1, 0]
+  ],
+  "map_size": [10, 25],
+  "goal": [5, 11],
+
+  "robot1": [0, 0],
+  "robot2": [9, 24],
+  "seed": 1,
+  "num_of_obstacles": 10,
+
+
+  "generate_video": 1
+}

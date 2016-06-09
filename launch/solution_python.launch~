@@ -1,0 +1,6 @@
+<launch>
+    <node pkg="cse_190_assi_3" type="robot.py" name="robot" output="screen" /> 
+    <node pkg="cse_190_assi_3" type="robot2.py" name="robot2" output="screen" /> 
+	<node pkg="cse_190_assi_3" type="map.py" name="map" output="screen" required="true"/> 
+    <node pkg="cse_190_assi_3" type="data_transcriber.py" name="data_transcriber" output="screen" cwd="node"/> 
+</launch>
