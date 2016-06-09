@@ -1,6 +1,8 @@
-#Path Planning Algorithms
+#Racing Robots(CSE 190 Final Project)
 
-In this assignment you need to implement:
+Shunxin Lu (A12420176)
 
-1. **A Star Search Algorithm** - To find an efficient path from the starting position to the goal.
-2. **Value Iteration (Markov Decision Process)** - To find the optimal policy at each point in the grid, maximizing based on the rewards.# CSE-190-Final-Project
+The idea of my final project is to inject some simple artificial intelligence to two robots and let them play a game between each other. 
+Here’s the set up of the game: two robots are initially located at two end of the map. And the map has a goal grid and some randomly located obstacles. Assuming that both robots know everything about the map (the location of the itself and the other robot, and the location of the obstacles on the map, and the location of the goal), in every time step, each robot take turn to make a move one step at a time. And after it made its move, the robot would also place an obstacle near the opponent to try to slow it down. And the goal for the game is to let the two robots race to the goal grid.
+To implement the game, I am using the A* search method we learned in class in order to find the optimal path to goal efficiently. And to find the best position to place the obstacle, the robot will scan through a 9*9 space near the opponent, try putting an obstacle in every grid and calculate the optimal path length for the opponent given that newly added obstacle. And find out which grid can make the opponent have to detour to the longest path and finally place the obstacle for that turn. So in every turn, a robot has to dynamically re-plan its path to the goal and recalculate the best location to place the obstacle until one robot reaches the goal. And after that, I visualize the game process by reusing and modifying the provided setup of PA3.
+The main thing that I learned in this project is how simple AI works by giving some rules to the robot to let it act rationally. Also, by implementing this project I now have a deeper understanding about robotics and ROS. One problem that I have in this project is that, the AI I am using is quite simple. I tried to implement a smarter one by using minimax algorithm, but in this case it not very practical because there are too many possible states, so I have to stick with the simple one. If I have more knowledge about AI I believe I could improve the intelligent level and the efficiency of it.
